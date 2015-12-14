@@ -10,14 +10,12 @@ $configPath = [string](Split-Path -Parent $MyInvocation.MyCommand.Definition) + 
 . $here\Functions\ConvertTo-GraphiteMetric.ps1
 . $here\Functions\Send-BulkGraphiteMetrics.ps1
 . $here\Functions\Send-GraphiteMetric.ps1
-. $here\Functions\Start-SQLStatsToGraphite.ps1
 . $here\Functions\Start-StatsToGraphite.ps1
 
 $functionsToExport = @(
     'ConvertTo-GraphiteMetric',
     'Send-BulkGraphiteMetrics',
     'Send-GraphiteMetric',
-    'Start-SQLStatsToGraphite',
     'Start-StatsToGraphite'
 )
 
