@@ -33,8 +33,7 @@ Function Import-XMLConfig
     $xmlfile = [xml]([System.IO.File]::ReadAllText($configPath))
 
     # Set the Graphite carbon server location and port number
-    $Config.CarbonServer = $xmlfile.Configuration.Graphite.CarbonServer
-    $Config.CarbonServerPort = $xmlfile.Configuration.Graphite.CarbonServerPort
+    $Config.CarbonServers = $xmlfile.Configuration.Graphite.CarbonServers
 
     # Get the HostName to use for the metrics from the config file
     $Config.NodeHostName = $xmlfile.Configuration.Graphite.NodeHostName
