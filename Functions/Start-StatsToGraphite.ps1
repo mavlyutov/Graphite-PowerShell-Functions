@@ -13,11 +13,11 @@ Function Start-StatsToGraphite
     .Parameter TestMode
         Metrics that would be sent to Graphite is shown, without sending the metric on to Graphite.
 
-    .Parameter ExcludePerfCounters
+    .Parameter NoPerfCounters
         Excludes Performance counters defined in XML config
 
-    .Parameter SqlMetrics
-        Includes SQL Metrics defined in XML config
+    .Parameter NoSqlMetrics
+        Excludes SQL Metrics defined in XML config
 
     .Example
         PS> Start-StatsToGraphite
@@ -30,14 +30,14 @@ Function Start-StatsToGraphite
         Will start the endless loop to send stats to Graphite and provide Verbose output.
 
     .Example
-        PS> Start-StatsToGraphite -SqlMetrics
+        PS> Start-StatsToGraphite -NoSqlMetrics
 
-        Sends perf counters & sql metrics
+        Sends perf counters only
 
     .Example
-        PS> Start-StatsToGraphite -SqlMetrics -ExcludePerfCounters
+        PS> Start-StatsToGraphite -NoPerfCounters
 
-        Sends only sql metrics
+        Sends sql metrics only
 
     .Notes
         NAME:      Start-StatsToGraphite
@@ -50,8 +50,8 @@ Function Start-StatsToGraphite
         # Enable Test Mode. Metrics will not be sent to Graphite
         [Parameter(Mandatory = $false)]
         [switch]$TestMode,
-        [switch]$ExcludePerfCounters = $false,
-        [switch]$SqlMetrics = $false
+        [switch]$NoPerfCounters = $false,
+        [switch]$NoSqlMetrics = $false
     )
 
     # Run The Load XML Config Function
@@ -62,11 +62,11 @@ Function Start-StatsToGraphite
 
     $configFileLastWrite = (Get-Item -Path $configPath).LastWriteTime
 
-    if($ExcludePerfCounters -and -not $SqlMetrics) {
+    if($NoPerfCounters -and $NoSqlMetrics) {
         throw "Parameter combination provided will prevent any metrics from being collected"
     }
 
-    if($SqlMetrics) {
+    if(-not $NoSqlMetrics) {
         if ($Config.MSSQLServers.Length -gt 0)
         {
             # Check for SQLPS Module
@@ -116,7 +116,7 @@ Function Start-StatsToGraphite
 
         $metricsToSend = @{}
 
-        if(-not $ExcludePerfCounters)
+        if(-not $NoPerfCounters)
         {
             # Take the Sample of the Counter
             $collections = Get-Counter -Counter $Config.Counters -SampleInterval 1 -MaxSamples 1
@@ -160,10 +160,10 @@ Function Start-StatsToGraphite
 
                 Write-Verbose "Job Execution Time To Get to Clean Metrics: $($filterStopWatch.Elapsed.TotalSeconds) seconds."
 
-            } # End for each sample loop
-        } # end if ExcludePerfCounters
+            }
+        }
 
-        if($SqlMetrics) {
+        if(-not $NoSqlMetrics) {
 
             # Loop through each SQL Server
             foreach ($sqlServer in $Config.MSSQLServers)
@@ -259,7 +259,7 @@ Function Start-StatsToGraphite
         $sleep = $Config.MetricTimeSpan.TotalMilliseconds
 
         # Set SQL Metric collection interval, if SqlMetrics is true
-        if ($SqlMetrics) { $sleep = $Config.MSSQLMetricTimeSpan.TotalMilliseconds - $collectionTime.TotalMilliseconds }
+        if (-not $NoSqlMetrics) { $sleep = $Config.MSSQLMetricTimeSpan.TotalMilliseconds - $collectionTime.TotalMilliseconds }
 
         if ($Config.ShowOutput)
         {
