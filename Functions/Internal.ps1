@@ -162,8 +162,7 @@ function PSUsing
 function SendMetrics
 {
     param (
-        [string]$CarbonServer,
-        [int]$CarbonServerPort,
+        [string]$CarbonServers,
         [string[]]$Metrics,
         [switch]$IsUdp = $false,
         [switch]$TestMode = $false
@@ -171,45 +170,49 @@ function SendMetrics
 
     if (!($TestMode))
     {
-        try
-        {
-            if ($isUdp)
+        $CarbonServers -split (",\s+") | foreach {
+            $CarbonServer, $CarbonServerPort = $_.split(":\s+")
+            try
             {
-                PSUsing ($udpobject = new-Object system.Net.Sockets.Udpclient($CarbonServer, $CarbonServerPort)) -ScriptBlock {
-                    $enc = new-object system.text.asciiencoding
-                    foreach ($metricString in $Metrics)
-                    {
-                        $Message += "$($metricString)`n"
+                if ($isUdp)
+                {
+                    PSUsing ($udpobject = New-Object system.Net.Sockets.Udpclient) -ScriptBlock {
+                        $socket.connect($CarbonServer, $CarbonServerPort)
+                        $enc = new-object system.text.asciiencoding
+                        foreach ($metricString in $Metrics)
+                        {
+                            $Message += "$($metricString)`n"
+                        }
+                        $byte = $enc.GetBytes($Message)
+
+                        Write-Verbose "Byte Length: $($byte.Length)"
+                        $Sent = $udpobject.Send($byte,$byte.Length)
                     }
-                    $byte = $enc.GetBytes($Message)
 
-                    Write-Verbose "Byte Length: $($byte.Length)"
-                    $Sent = $udpobject.Send($byte,$byte.Length)
+                    Write-Verbose "Sent via UDP to $($CarbonServers)."
                 }
-
-                Write-Verbose "Sent via UDP to $($CarbonServer) on port $($CarbonServerPort)."
-            }
-            else
-            {
-                PSUsing ($socket = New-Object System.Net.Sockets.TCPClient) -ScriptBlock {
-                    $socket.connect($CarbonServer, $CarbonServerPort)
-                    PSUsing ($stream = $socket.GetStream()) {
-                        PSUSing($writer = new-object System.IO.StreamWriter($stream)) {
-                            foreach ($metricString in $Metrics)
-                            {
-                                $writer.WriteLine($metricString)
+                else
+                {
+                    PSUsing ($socket = New-Object System.Net.Sockets.TCPClient) -ScriptBlock {
+                        $socket.connect($CarbonServer, $CarbonServerPort)
+                        PSUsing ($stream = $socket.GetStream()) {
+                            PSUSing($writer = new-object System.IO.StreamWriter($stream)) {
+                                foreach ($metricString in $Metrics)
+                                {
+                                    $writer.WriteLine($metricString)
+                                }
+                                $writer.Flush()
+                                Write-Verbose "Sent via TCP to $($CarbonServers)."
                             }
-                            $writer.Flush()
-                            Write-Verbose "Sent via TCP to $($CarbonServer) on port $($CarbonServerPort)."
                         }
                     }
                 }
             }
-        }
-        catch
-        {
-            $exceptionText = GetPrettyProblem $_
-            Write-Error "Error sending metrics to the Graphite Server. Please check your configuration file. `n$exceptionText"
+            catch
+            {
+                $exceptionText = GetPrettyProblem $_
+                Write-Error "Error sending metrics to the Graphite Server. Please check your configuration file. `n$exceptionText"
+            }
         }
     }
 }

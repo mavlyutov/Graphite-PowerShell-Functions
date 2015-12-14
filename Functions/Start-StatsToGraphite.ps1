@@ -232,8 +232,7 @@ Function Start-StatsToGraphite
         # Send To Graphite Server
 
         $sendBulkGraphiteMetricsParams = @{
-            "CarbonServer" = $Config.CarbonServer
-            "CarbonServerPort" = $Config.CarbonServerPort
+            "CarbonServers" = $Config.CarbonServers
             "Metrics" = $metricsToSend
             "DateTime" = $nowUtc
             "UDP" = $Config.SendUsingUDP

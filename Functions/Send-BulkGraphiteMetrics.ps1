@@ -85,8 +85,7 @@ function Send-BulkGraphiteMetrics
     }
 
     $sendMetricsParams = @{
-        "CarbonServer" = $CarbonServer
-        "CarbonServerPort" = $CarbonServerPort
+        "CarbonServers" = $CarbonServers
         "Metrics" = $metricStrings
         "IsUdp" = $UDP
         "TestMode" = $TestMode
