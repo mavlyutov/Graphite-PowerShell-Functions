@@ -111,6 +111,9 @@ Function Start-StatsToGraphite
         # Round Time to Nearest Time Period
         $nowUtc = $nowUtc.AddSeconds(- ($nowUtc.Second % $Config.MetricSendIntervalSeconds))
 
+        # Convert to unixtime
+        $nowUtc = [int][double]::Parse((Get-Date -Date $nowUtc -UFormat %s))
+
         $metricsToSend = @{}
 
         if(-not $ExcludePerfCounters)
@@ -140,14 +143,13 @@ Function Start-StatsToGraphite
                 {
                     # Remove "dot" from the original sample path
                     $sample.path = $sample.path.replace(".","-")
-                    
+
                     # Run the sample path through the ConvertTo-GraphiteMetric function
                     $cleanNameOfSample = ConvertTo-GraphiteMetric -MetricToClean $sample.Path -HostName $Config.NodeHostName -MetricReplacementHash $Config.MetricReplace
 
                     # Build the full metric path
                     $metricPath = $Config.MetricPath + '.' + $cleanNameOfSample
-
-                    $metricsToSend[$metricPath] = $sample.Cookedvalue
+                    $metricsToSend[$metricPath] = @{value = $sample.Cookedvalue; timestamp = $nowUtc}
                 }
                 else
                 {
@@ -158,8 +160,8 @@ Function Start-StatsToGraphite
 
                 Write-Verbose "Job Execution Time To Get to Clean Metrics: $($filterStopWatch.Elapsed.TotalSeconds) seconds."
 
-            }# End for each sample loop
-        }# end if ExcludePerfCounters
+            } # End for each sample loop
+        } # end if ExcludePerfCounters
 
         if($SqlMetrics) {
 
@@ -195,29 +197,34 @@ Function Start-StatsToGraphite
                             $sqlresults = Invoke-SQLCmd @sqlCmdParams
 
                             # Build the MetricPath that will be used to send the single metric to Graphite
-							if ($query.MetricType -eq "SingleRow")
-							{
-								$metricPath = $Config.MSSQLMetricPath + '.' + $query.MetricName
-								$metricsToSend[$metricPath] = $sqlresults[0]
-							}
+                            if ($query.MetricType -eq "SingleRow")
+                            {
+                                $metricPath = $Config.MSSQLMetricPath + '.' + $query.MetricName
+                                $metricsToSend[$metricPath] = @{value = $sqlresults[0]; timestamp = $nowUtc}
+                            }
                             # Build the MetricPath that will be used to send the multiRow metric to Graphite
-							elseif ($query.MetricType -eq "MultiRow")
-							{
-								foreach ($sqlresult in $sqlresults)
-								{
-									# Build the MetricPath that will be used to send the metric to Graphite
-									$metricPath = $Config.MSSQLMetricPath + '.' + $sqlresult[0]
-									$metricsToSend[$metricPath] = $sqlresult[1]
-								}
-							}
+                            elseif ($query.MetricType -eq "MultiRow")
+                            {
+                                foreach ($sqlresult in $sqlresults)
+                                {
+                                    # Build the MetricPath that will be used to send the metric to Graphite
+                                    $metricPath = $Config.MSSQLMetricPath + '.' + $sqlresult[0]
+                                    try {
+                                        $timestamp = [datetime]::ParseExact($sqlresults[2], 'yyyy-MM-dd HH:mm:ss.fff', [System.Globalization.CultureInfo]::CurrentCulture)
+                                        $timestamp = [int][double]::Parse((Get-Date -Date $timestamp -UFormat %s))
+                                        $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = }
+                                    } catch {
+                                        Write-Verbose ('Cannot get timestamp from SQL resultset, will write NOW as timestamp')
+                                        $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = $nowUtc}
+                                    }
+                                }
+                            }
                             # No valid MetricType selected, aborting collection
-							else
-							{
-								throw "No valid MetricType was selected, aborting script."
-							}
-
+                            else
+                            {
+                                throw "No valid MetricType was selected, aborting script."
+                            }
                         }
-
                         Write-Verbose ('SQL Metric Collection Execution Time: ' + $commandMeasurement.TotalSeconds + ' seconds')
                     }
                     catch
@@ -225,16 +232,15 @@ Function Start-StatsToGraphite
                         $exceptionText = GetPrettyProblem $_
                         throw "An error occurred with processing the SQL Query. $exceptionText"
                     }
-                } #end foreach Query
-            } #end foreach SQL Server
-        }#endif SqlMetrics
+                } # end foreach Query
+            } # end foreach SQL Server
+        } # endif SqlMetrics
 
         # Send To Graphite Server
 
         $sendBulkGraphiteMetricsParams = @{
             "CarbonServers" = $Config.CarbonServers
             "Metrics" = $metricsToSend
-            "DateTime" = $nowUtc
             "UDP" = $Config.SendUsingUDP
             "Verbose" = $Config.ShowOutput
             "TestMode" = $TestMode
@@ -249,13 +255,12 @@ Function Start-StatsToGraphite
 
         $iterationStopWatch.Stop()
         $collectionTime = $iterationStopWatch.Elapsed
-        
-        
+
         $sleep = $Config.MetricTimeSpan.TotalMilliseconds
-        
+
         # Set SQL Metric collection interval, if SqlMetrics is true
-        if ($SqlMetrics) { $sleep = $Config.MSSQLMetricTimeSpan.TotalMilliseconds - $collectionTime.TotalMilliseconds } 
-        
+        if ($SqlMetrics) { $sleep = $Config.MSSQLMetricTimeSpan.TotalMilliseconds - $collectionTime.TotalMilliseconds }
+
         if ($Config.ShowOutput)
         {
             # Write To Console How Long Execution Took
