@@ -172,7 +172,7 @@ Function Start-StatsToGraphite
                 # Loop through each query for the SQL server
                 foreach ($query in $sqlServer.Queries)
                 {
-                    Write-Verbose "Current Query $($query.TSQL)"
+                    Write-Verbose "Current Query: $($query.TSQL)"
 
                     $sqlCmdParams = @{
                         'ServerInstance' = $sqlServer.ServerInstance;
@@ -210,8 +210,7 @@ Function Start-StatsToGraphite
                                     # Build the MetricPath that will be used to send the metric to Graphite
                                     $metricPath = $Config.MSSQLMetricPath + '.' + $sqlresult[0]
                                     try {
-                                        $timestamp = [datetime]::ParseExact($sqlresults[2], 'yyyy-MM-dd HH:mm:ss.fff', [System.Globalization.CultureInfo]::CurrentCulture)
-                                        $unixtime = [int][double]::Parse((Get-Date -Date $timestamp -UFormat %s))
+                                        $unixtime = [int][double]::Parse((Get-Date -Date $sqlresults[2] -UFormat %s))
                                         Write-Verbose ('Got timestamp from SQL resultset')
                                         $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = $unixtime}
                                     } catch {
