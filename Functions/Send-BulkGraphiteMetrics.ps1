@@ -39,11 +39,7 @@ function Send-BulkGraphiteMetrics
     (
         [CmdletBinding(DefaultParametersetName = 'Date Object')]
         [parameter(Mandatory = $true)]
-        [string]$CarbonServer,
-
-        [parameter(Mandatory = $false)]
-        [ValidateRange(1, 65535)]
-        [int]$CarbonServerPort = 2003,
+        [string]$CarbonServers,
 
         [parameter(Mandatory = $true)]
         [hashtable]$Metrics,

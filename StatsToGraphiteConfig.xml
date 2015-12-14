@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Configuration>
 	<Graphite>
-		<CarbonServers>yourCarbonServerNameOrIP:port1,yourCarbonServerNameOrIP2:port2</CarbonServers>
+		<CarbonServers>yourCarbonServerNameOrIP1:port1,yourCarbonServerNameOrIP2:port2</CarbonServers>
 		<MetricPath>datacenter1.servers</MetricPath>
 		<NodeHostName>$env:COMPUTERNAME</NodeHostName>
 		<MetricSendIntervalSeconds>5</MetricSendIntervalSeconds>

@@ -169,14 +169,13 @@ function SendMetrics
 
     if (!($TestMode))
     {
-        $CarbonServers -split (",\s?") | foreach {
-            $CarbonServer, $CarbonServerPort = $_.split(":\s?")
+        $CarbonServers -split (",") | foreach {
+            $CarbonServer, $CarbonServerPort = $_.split(":")
             try
             {
                 if ($isUdp)
                 {
-                    PSUsing ($udpobject = New-Object system.Net.Sockets.Udpclient) -ScriptBlock {
-                        $socket.connect($CarbonServer, $CarbonServerPort)
+                    PSUsing ($udpobject = New-Object system.Net.Sockets.Udpclient($CarbonServer, $CarbonServerPort)) -ScriptBlock {
                         $enc = new-object system.text.asciiencoding
                         foreach ($metricString in $Metrics)
                         {
