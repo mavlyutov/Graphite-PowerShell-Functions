@@ -212,6 +212,7 @@ Function Start-StatsToGraphite
                                     try {
                                         $timestamp = [datetime]::ParseExact($sqlresults[2], 'yyyy-MM-dd HH:mm:ss.fff', [System.Globalization.CultureInfo]::CurrentCulture)
                                         $unixtime = [int][double]::Parse((Get-Date -Date $timestamp -UFormat %s))
+                                        Write-Verbose ('Got timestamp from SQL resultset')
                                         $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = $unixtime}
                                     } catch {
                                         Write-Verbose ('Cannot get timestamp from SQL resultset, will write NOW as timestamp')
