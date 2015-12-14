@@ -170,8 +170,8 @@ function SendMetrics
 
     if (!($TestMode))
     {
-        $CarbonServers -split (",\s+") | foreach {
-            $CarbonServer, $CarbonServerPort = $_.split(":\s+")
+        $CarbonServers -split (",\s?") | foreach {
+            $CarbonServer, $CarbonServerPort = $_.split(":\s?")
             try
             {
                 if ($isUdp)
