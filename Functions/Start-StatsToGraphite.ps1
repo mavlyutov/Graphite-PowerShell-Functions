@@ -211,8 +211,8 @@ Function Start-StatsToGraphite
                                     $metricPath = $Config.MSSQLMetricPath + '.' + $sqlresult[0]
                                     try {
                                         $timestamp = [datetime]::ParseExact($sqlresults[2], 'yyyy-MM-dd HH:mm:ss.fff', [System.Globalization.CultureInfo]::CurrentCulture)
-                                        $timestamp = [int][double]::Parse((Get-Date -Date $timestamp -UFormat %s))
-                                        $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = }
+                                        $unixtime = [int][double]::Parse((Get-Date -Date $timestamp -UFormat %s))
+                                        $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = $unixtime}
                                     } catch {
                                         Write-Verbose ('Cannot get timestamp from SQL resultset, will write NOW as timestamp')
                                         $metricsToSend[$metricPath] = @{value = $sqlresults[1]; timestamp = $nowUtc}
