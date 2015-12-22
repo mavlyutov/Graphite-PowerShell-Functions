@@ -56,6 +56,10 @@ Function Start-StatsToGraphite
 
     # Run The Load XML Config Function
     $Config = Import-XMLConfig -ConfigPath $configPath
+    if (![bool]($Config.PSobject.Properties.name -match "MSSQLServers")) {
+        $NoSqlMetrics = $true
+        Write-Verbose "SQL configuration has been left out, skipping."
+    }
 
     # Get Last Run Time
     $sleep = 0
