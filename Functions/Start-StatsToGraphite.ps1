@@ -54,7 +54,7 @@ Function Start-StatsToGraphite
         [Parameter(Mandatory = $false)]
         [switch]$TestMode,
         [switch]$NoPerfCounters = $false,
-        [switch]$NoSqlMetrics = $false
+        [switch]$NoSqlMetrics = $false,
         [string]$ConfigXMLPath
     )
 
