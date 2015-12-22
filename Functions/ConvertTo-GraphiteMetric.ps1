@@ -69,13 +69,13 @@ Function ConvertTo-GraphiteMetric
         $MetricToClean = $MetricToClean -replace "\\\\$($env:COMPUTERNAME)\\","\\$($hostGuid)\"
 
         $renameHost = $true
-        
+
     }
 
     if ($MetricReplacementHash -ne $null)
     {
         $cleanNameOfSample = $MetricToClean
-        
+
         ForEach ($m in $MetricReplacementHash.GetEnumerator())
         {
             If ($m.Value -cmatch '#{CAPTUREGROUP}')

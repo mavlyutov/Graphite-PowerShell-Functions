@@ -19,6 +19,9 @@ Function Start-StatsToGraphite
     .Parameter NoSqlMetrics
         Excludes SQL Metrics defined in XML config
 
+    .Parameter ConfigXMLPath
+        Uses this configuration file instead of the one inside the module folder
+
     .Example
         PS> Start-StatsToGraphite
 
@@ -52,7 +55,17 @@ Function Start-StatsToGraphite
         [switch]$TestMode,
         [switch]$NoPerfCounters = $false,
         [switch]$NoSqlMetrics = $false
+        [string]$ConfigXMLPath
     )
+
+    # Override the config path set in the module if one is provided explicitly
+    if (-not [string]::IsNullOrWhiteSpace($ConfigXMLPath)) {
+        $configPath = $ConfigXMLPath
+    }
+
+    if (-not (Test-Path -PathType Leaf -LiteralPath $configPath)){
+        throw "Cannot find configuration file - $configPath"
+    }
 
     # Run The Load XML Config Function
     $Config = Import-XMLConfig -ConfigPath $configPath
@@ -152,7 +165,12 @@ Function Start-StatsToGraphite
                     $cleanNameOfSample = ConvertTo-GraphiteMetric -MetricToClean $sample.Path -HostName $Config.NodeHostName -MetricReplacementHash $Config.MetricReplace
 
                     # Build the full metric path
-                    $metricPath = $Config.MetricPath + '.' + $cleanNameOfSample
+                    if (-not [string]::IsNullOrWhiteSpace($Config.MetricPath)) {
+                        $metricPath = $Config.MetricPath + '.' + $cleanNameOfSample
+                    } else {
+                        $metricPath = $cleanNameOfSample
+                    }
+
                     $metricsToSend[$metricPath] = @{value = $sample.Cookedvalue; timestamp = $nowUtc}
                 }
                 else
